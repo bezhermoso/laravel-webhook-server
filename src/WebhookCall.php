@@ -9,6 +9,7 @@ use Spatie\WebhookServer\Exceptions\CouldNotCallWebhook;
 use Spatie\WebhookServer\Exceptions\InvalidBackoffStrategy;
 use Spatie\WebhookServer\Exceptions\InvalidSigner;
 use Spatie\WebhookServer\Signer\Signer;
+use Spatie\WebhookServer\Signer\UrlAwareSigner;
 
 class WebhookCall
 {
@@ -220,7 +221,16 @@ class WebhookCall
             return $headers;
         }
 
+        if ($this->signer instanceof UrlAwareSigner) {
+            $this->signer->withUrl($this->callWebhookJob->webhookUrl);
+        }
+
         $signature = $this->signer->calculateSignature($this->payload, $this->secret);
+
+        if ($this->signer instanceof UrlAwareSigner) {
+            // Set to empty to avoid wonky state problems...
+            $this->signer->withUrl('');
+        }
 
         $headers[$this->signer->signatureHeaderName()] = $signature;
 
